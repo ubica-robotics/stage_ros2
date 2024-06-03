@@ -10,9 +10,6 @@
 #include <signal.h>
 #include <mutex>
 
-// libstage
-#include <stage.hh>
-
 // roscpp
 #include <rclcpp/rclcpp.hpp>
 #include <std_srvs/srv/empty.hpp>
@@ -28,7 +25,12 @@
 #include <tf2/transform_datatypes.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
+// libstage
+#include <stage.hh>
+
 #include "stage_ros2/visibility.h"
+
+
 
 // Our node
 class StageNode : public rclcpp::Node
