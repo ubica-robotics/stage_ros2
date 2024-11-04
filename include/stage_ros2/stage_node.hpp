@@ -23,7 +23,7 @@
 #include <stage_ros2/transform_broadcaster.h>
 #include <stage_ros2/static_transform_broadcaster.h>
 #include <tf2/transform_datatypes.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 // libstage
 #include <stage.hh>
