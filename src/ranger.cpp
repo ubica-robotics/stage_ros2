@@ -5,7 +5,6 @@
 #include <filesystem>
 
 #define TOPIC_LASER "base_scan"
-#define FRAME_LASER "laser"
 
 using std::placeholders::_1;
 
@@ -23,7 +22,7 @@ void StageNode::Vehicle::Ranger::init(bool add_id_to_topic)
   if(initialized_) return; 
   model->Subscribe();
   topic_name = vehicle->topic_name_space_ + TOPIC_LASER;
-  frame_id = vehicle->frame_name_space_ + FRAME_LASER;
+  frame_id = vehicle->frame_name_space_ + vehicle->node()->frame_laser_;
   if (add_id_to_topic) {
     topic_name += std::to_string(id());
     frame_id += std::to_string(id());

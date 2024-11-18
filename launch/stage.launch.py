@@ -36,6 +36,18 @@ def generate_launch_description():
         'one_tf_tree',
         default_value='false',
         description='on true all tfs are published with a namespace on /tf and /tf_static')
+  
+    publish_tf = LaunchConfiguration('publish_tf')
+    publish_tf_arg = DeclareLaunchArgument(
+        'publish_tf',
+        default_value='true',
+        description='on true odom tfs is published')
+    
+    frame_laser = LaunchConfiguration('frame_laser')
+    frame_laser_arg = DeclareLaunchArgument(
+        'frame_laser',
+        default_value='laser',
+        description='defines name for frame_laser')
     
     def stage_world_configuration(context):
         file = os.path.join(
@@ -49,6 +61,8 @@ def generate_launch_description():
     return LaunchDescription([
         stage_world_arg,
         one_tf_tree_arg, 
+        publish_tf_arg,
+        frame_laser_arg,
         enforce_prefixes_arg, 
         use_static_transformations_arg, 
         stage_world_configuration_arg,
@@ -59,6 +73,8 @@ def generate_launch_description():
             parameters=[{'one_tf_tree': one_tf_tree,
                         'enforce_prefixes': enforce_prefixes,
                         'use_static_transformations': use_static_transformations,
+                        'publish_tf': publish_tf,
+                        'frame_laser': frame_laser,
                 "world_file": [LaunchConfiguration('world_file')]}],
         )
     ])
