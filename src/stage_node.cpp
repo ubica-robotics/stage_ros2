@@ -72,6 +72,14 @@ void StageNode::declare_parameters()
   this->declare_parameter<std::string>(
     "frame_id_base_link", "base_link",
     param_desc_frame_id_base_link_name_);
+
+  auto param_desc_publish_tf = rcl_interfaces::msg::ParameterDescriptor{};
+  param_desc_publish_tf.description = "bool if odom publish_tf";
+  this->declare_parameter<bool>("publish_tf", true, param_desc_publish_tf);
+
+  auto param_desc_frame_laser = rcl_interfaces::msg::ParameterDescriptor{};
+  param_desc_frame_laser.description = "laser frame name";
+  this->declare_parameter<std::string>("frame_laser", "laser_frame", param_desc_frame_laser);
 }
 
 void StageNode::update_parameters()
@@ -87,6 +95,8 @@ void StageNode::update_parameters()
   this->get_parameter("frame_id_odom", this->frame_id_odom_name_);
   this->get_parameter("frame_id_world", this->frame_id_world_name_);
   this->get_parameter("frame_id_base_link", this->frame_id_base_link_name_);
+  this->get_parameter("frame_laser", this->frame_laser_);
+  this->get_parameter("publish_tf", this->publish_tf_);
 
   this->get_parameter("world_file", this->world_file_);
   if (!std::filesystem::exists(this->world_file_)) {
@@ -191,7 +201,7 @@ int StageNode::callback_update_stage_world(Stg::World * world, StageNode * node)
     auto vehicle = node->vehicles_[r];
     vehicle->check_watchdog_timeout();
     vehicle->publish_msg();
-    vehicle->publish_tf();
+    if(vehicle->node()->publish_tf_){vehicle->publish_tf();}
 
     // loop on the ranger devices for the current robot
     for (auto ranger: vehicle->rangers_) {

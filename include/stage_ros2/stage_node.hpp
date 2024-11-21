@@ -167,10 +167,12 @@ public:
   bool enable_gui_;                        /// ROS parameter
   bool publish_ground_truth_;              /// ROS parameter
   bool use_static_transformations_;        /// ROS parameter
+  bool publish_tf_;                        /// ROS parameter
   std::string world_file_;                 /// ROS parameter
   std::string frame_id_odom_name_;         /// ROS parameter
   std::string frame_id_world_name_;        /// ROS parameter
   std::string frame_id_base_link_name_;    /// ROS parameter
+  std::string frame_laser_;                /// ROS parameter
 
   // TF broadcaster to publish the robot odom
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_stage_;
