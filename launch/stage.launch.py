@@ -46,7 +46,7 @@ def generate_launch_description():
     frame_laser = LaunchConfiguration('frame_laser')
     frame_laser_arg = DeclareLaunchArgument(
         'frame_laser',
-        default_value='laser',
+        default_value='laser_frame',
         description='defines name for frame_laser')
     
     def stage_world_configuration(context):

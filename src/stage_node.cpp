@@ -79,7 +79,7 @@ void StageNode::declare_parameters()
 
   auto param_desc_frame_laser = rcl_interfaces::msg::ParameterDescriptor{};
   param_desc_frame_laser.description = "laser frame name";
-  this->declare_parameter<std::string>("frame_laser", "laser", param_desc_frame_laser);
+  this->declare_parameter<std::string>("frame_laser", "laser_frame", param_desc_frame_laser);
 }
 
 void StageNode::update_parameters()
