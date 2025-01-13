@@ -24,6 +24,9 @@
 #include <stage_ros2/static_transform_broadcaster.h>
 #include <tf2/transform_datatypes.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <stage_ros2/srv/set_object_pose.hpp>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 // libstage
 #include <stage.hh>
@@ -157,8 +160,33 @@ public:
     std::shared_ptr<stage_ros2::TransformBroadcaster> tf_broadcaster_;
   };
 
-  /// vector to hold the simulated vehicles with ros interfaces
+  class Object
+  {
+private:
+    bool initialized_;
+    size_t id_;
+    Stg::Pose initial_pose_;
+    std::string name_;     /// used for the ros publisher
+    StageNode * node_;
+
+public:
+    Object(size_t id, const Stg::Pose & pose, const std::string & name, StageNode * node);
+
+    void soft_reset();
+    size_t id() const;
+    const std::string & name() const;
+    void init();
+    StageNode *node(){
+      return node_;
+    }
+
+    // stage related models
+    Stg::Model * model;               // one position
+  };
+
+  /// vector to hold the simulated Objects with ros interfaces
   std::vector<std::shared_ptr<Vehicle>> vehicles_;
+  std::vector<std::shared_ptr<Object>> objects_;
 
 
   bool isDepthCanonical_;                  /// ROS parameter
@@ -179,6 +207,8 @@ public:
 
   // Service to listening on soft reset signals
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srv_reset_;
+  rclcpp::Service<stage_ros2::srv::SetObjectPose>::SharedPtr srv_object_setpose_;
+  rclcpp::Service<stage_ros2::srv::SetObjectPose>::SharedPtr srv_object_setpose_from_robot_;
 
   // publisher for the simulated clock
   rclcpp::Publisher<rosgraph_msgs::msg::Clock>::SharedPtr clock_pub_;
@@ -188,6 +218,9 @@ public:
 
   /// called on every simulation interation
   static int callback_update_stage_world(Stg::World * world, StageNode * node);
+
+  // publishes visualization markers for objects
+  static void publish_object_visualization(StageNode * node);
 
 public:
   ~StageNode();
@@ -218,6 +251,14 @@ public:
   // Service callback for soft reset
   bool cb_reset_srv(const std_srvs::srv::Empty::Request::SharedPtr,
     std_srvs::srv::Empty::Response::SharedPtr);
+
+  // Service callback for object setPose
+  void cb_object_setpose_srv(const std::shared_ptr<stage_ros2::srv::SetObjectPose::Request> request,
+                                   std::shared_ptr<stage_ros2::srv::SetObjectPose::Response> response);
+  
+  // Service callback for object setPose relative to robot pose
+  void cb_object_setpose_from_robot_srv(const std::shared_ptr<stage_ros2::srv::SetObjectPose::Request> request,
+                                  std::shared_ptr<stage_ros2::srv::SetObjectPose::Response> response);                            
 
   // The main simulator object
   Stg::World * world;

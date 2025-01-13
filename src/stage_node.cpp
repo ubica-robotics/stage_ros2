@@ -3,6 +3,7 @@
 #include <chrono>
 #include <memory>
 #include <filesystem>
+#include <cstring>
 
 StageNode::StageNode(rclcpp::NodeOptions options)
 : Node("stage_ros2", options), base_watchdog_timeout_(0, 0)
@@ -172,7 +173,83 @@ int StageNode::callback_init_stage_model(Stg::Model * mod, StageNode * node)
       }
     }
   }
+
+  if (dynamic_cast<Stg::Model *>(mod)) {
+    Stg::Model * model = dynamic_cast<Stg::Model *>(mod);
+    std::string model_name(mod->TokenStr().c_str());
+    if(model_name.find("obstacle") != std::string::npos){ // such that only the intended models become "objects"
+      RCLCPP_INFO(node->get_logger(), "New Object \"%s\"", model_name.c_str());
+      auto object = std::make_shared<Object>(
+        node->objects_.size(),
+        model->GetGlobalPose(), mod->TokenStr(), node);
+      node->objects_.push_back(object);
+      object->model = model;
+    }
+  }
+
   return 0;
+}
+
+geometry_msgs::msg::Quaternion StageNode::createQuaternionMsgFromYaw(double yaw)
+{
+  tf2::Quaternion q;
+  q.setRPY(0, 0, yaw);
+  return tf2::toMsg(q);
+}
+
+void StageNode::publish_object_visualization(StageNode * node)
+{
+  rclcpp::QoS qos(10);
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_object = node->create_publisher<visualization_msgs::msg::MarkerArray>("obstacle_viszualization", qos);
+  visualization_msgs::msg::MarkerArray marker_array;
+
+  for (auto object: node->objects_) {
+
+    visualization_msgs::msg::Marker marker_text;
+    marker_text.id = object->id();
+    marker_text.header.frame_id = "map";
+    marker_text.header.stamp = object->node()->sim_time_;
+    marker_text.pose.position.x = object->model->GetGlobalPose().x;
+    marker_text.pose.position.y = object->model->GetGlobalPose().y;
+    marker_text.pose.position.z = object->model->GetGlobalPose().z;
+    marker_text.pose.orientation = createQuaternionMsgFromYaw(object->model->GetGlobalPose().a);
+    marker_text.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+    marker_text.text = object->name();
+    marker_text.ns = "ObjectNames";
+    marker_text.action = visualization_msgs::msg::Marker::MODIFY;
+    marker_text.scale.z = 0.3;
+    marker_text.color.r = 1.0;
+    marker_text.color.g = 1.0;
+    marker_text.color.b = 1.0;
+    marker_text.color.a = 1.0;
+
+
+    visualization_msgs::msg::Marker marker_pose;
+    marker_pose.id = object->id();
+    marker_pose.header.frame_id = "map";
+    marker_pose.header.stamp = object->node()->sim_time_;
+    marker_pose.pose.position.x = object->model->GetGlobalPose().x;
+    marker_pose.pose.position.y = object->model->GetGlobalPose().y;
+    marker_pose.pose.position.z = object->model->GetGlobalPose().z;
+    marker_pose.pose.orientation = createQuaternionMsgFromYaw(object->model->GetGlobalPose().a);
+    marker_pose.type = visualization_msgs::msg::Marker::CUBE;
+    marker_pose.ns = "ObjectPoses";
+    marker_pose.action = visualization_msgs::msg::Marker::MODIFY;
+    marker_pose.scale.x = object->model->GetGeom().size.x;
+    marker_pose.scale.y = object->model->GetGeom().size.y;
+    marker_pose.scale.z = object->model->GetGeom().size.z;
+    marker_pose.color.r = 255.0;
+    marker_pose.color.g = 0.0;
+    marker_pose.color.b = 0.0;
+    marker_pose.color.a = 1.0;
+
+    marker_array.markers.push_back(marker_text);
+    marker_array.markers.push_back(marker_pose);
+
+  }
+  
+  pub_object->publish(marker_array);
+
 }
 
 int StageNode::callback_update_stage_world(Stg::World * world, StageNode * node)
@@ -216,6 +293,9 @@ int StageNode::callback_update_stage_world(Stg::World * world, StageNode * node)
       camera->publish_tf();
     }
   }
+
+  publish_object_visualization(node);
+
   rosgraph_msgs::msg::Clock clock_msg;
   clock_msg.clock = node->sim_time_;
   node->clock_pub_->publish(clock_msg);
@@ -230,7 +310,48 @@ bool StageNode::cb_reset_srv(
   for (auto vehicle: this->vehicles_) {
     vehicle->soft_reset();
   }
+  for (auto object: this->objects_) {
+    object->soft_reset();
+  }
   return true;
+}
+
+void StageNode::cb_object_setpose_srv(
+  const std::shared_ptr<stage_ros2::srv::SetObjectPose::Request> request,
+  std::shared_ptr<stage_ros2::srv::SetObjectPose::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Setting Position of %s!", request->name.c_str());
+  for (auto object: this->objects_) {
+    if(object->name() == request->name){
+      Stg::Pose pose = Stg::Pose(request->x, request->y, request->z, request->yaw);
+      object->model->SetPose(pose);
+      response->result = response->SUCCEEDED;
+      return;
+    }
+    response->result = response->FAILED;
+  }
+}
+
+void StageNode::cb_object_setpose_from_robot_srv(
+  const std::shared_ptr<stage_ros2::srv::SetObjectPose::Request> request,
+  std::shared_ptr<stage_ros2::srv::SetObjectPose::Response> response)
+{
+  RCLCPP_INFO(this->get_logger(), "Setting Position of %s!", request->name.c_str());
+  
+  auto vehicle = this->vehicles_.front(); //assume there is just one robot
+  double x = vehicle->positionmodel->GetGlobalPose().x + std::cos(vehicle->positionmodel->GetGlobalPose().a) * request->x - std::sin(vehicle->positionmodel->GetGlobalPose().a) * request->y;
+  double y = vehicle->positionmodel->GetGlobalPose().y + std::sin(vehicle->positionmodel->GetGlobalPose().a) * request->x + std::cos(vehicle->positionmodel->GetGlobalPose().a) * request->y;
+  double yaw = vehicle->positionmodel->GetGlobalPose().a + request->yaw;
+
+  for (auto object: this->objects_) {
+    if(object->name() == request->name){
+      Stg::Pose pose = Stg::Pose(x, y, 0, yaw);
+      object->model->SetPose(pose);
+      response->result = response->SUCCEEDED;
+      return;
+    }
+    response->result = response->FAILED;
+  }
 }
 
 void StageNode::init(int argc, char ** argv)
@@ -268,6 +389,10 @@ int StageNode::SubscribeModels()
     vehicle->init(use_topic_prefix, this->one_tf_tree_);
   }
 
+  for (std::shared_ptr<Object> object: this->objects_) {
+    object->init();
+  }
+
   // create the clock publisher
   clock_pub_ = this->create_publisher<rosgraph_msgs::msg::Clock>("/clock", 10);
 
@@ -277,6 +402,14 @@ int StageNode::SubscribeModels()
     [this](const std_srvs::srv::Empty::Request::SharedPtr request,
     std_srvs::srv::Empty::Response::SharedPtr response)
     {this->cb_reset_srv(request, response);});
+
+  srv_object_setpose_ = this->create_service<stage_ros2::srv::SetObjectPose>(
+    "stage/set_object_pose", std::bind(&StageNode::cb_object_setpose_srv, this,
+                                std::placeholders::_1, std::placeholders::_2));
+
+  srv_object_setpose_from_robot_ = this->create_service<stage_ros2::srv::SetObjectPose>(
+    "stage/set_object_pose_from_robot", std::bind(&StageNode::cb_object_setpose_from_robot_srv, this,
+                                std::placeholders::_1, std::placeholders::_2));
 
   return 0;
 }
@@ -303,11 +436,4 @@ geometry_msgs::msg::TransformStamped StageNode::create_transform_stamped(
   out.transform.rotation.y = in.getRotation().getY();
   out.transform.rotation.z = in.getRotation().getZ();
   return out;
-}
-
-geometry_msgs::msg::Quaternion StageNode::createQuaternionMsgFromYaw(double yaw)
-{
-  tf2::Quaternion q;
-  q.setRPY(0, 0, yaw);
-  return tf2::toMsg(q);
 }

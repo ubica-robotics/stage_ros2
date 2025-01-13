@@ -14,6 +14,8 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -23,16 +25,20 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 
+rosidl_generate_interfaces(${PROJECT_NAME}_interface
+  "srv/SetObjectPose.srv"
+)
+
 include_directories(
   ./include
   ${STAGE_INCLUDE_DIRS}
 )
 
 add_library(stage_node SHARED
-            src/stage_node.cpp src/vehicle.cpp src/ranger.cpp src/camera.cpp)
+            src/stage_node.cpp src/vehicle.cpp src/object.cpp src/ranger.cpp src/camera.cpp)
 target_compile_definitions(stage_node PRIVATE "STAGE_ROS2_PACKAGE_DLL")
 ament_target_dependencies(stage_node rclcpp rclcpp_components
-sensor_msgs geometry_msgs nav_msgs std_msgs tf2_ros std_srvs tf2_geometry_msgs)
+sensor_msgs geometry_msgs nav_msgs std_msgs tf2_ros std_srvs tf2_geometry_msgs visualization_msgs)
 
 
 # This package installs libraries without exporting them.
@@ -68,6 +74,9 @@ install(TARGETS
   stage_ros2
   DESTINATION lib/${PROJECT_NAME})
 
+rosidl_target_interfaces(stage_node 
+  ${PROJECT_NAME}_interface "rosidl_typesupport_cpp")
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -80,4 +89,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_export_dependencies(rosidl_default_runtime)
 ament_package()
