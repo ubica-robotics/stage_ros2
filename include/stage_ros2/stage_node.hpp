@@ -252,11 +252,7 @@ public:
 
   // Service callback for object setPose
   void cb_object_setpose_srv(const std::shared_ptr<stage_ros2::srv::SetObjectPose::Request> request,
-                                   std::shared_ptr<stage_ros2::srv::SetObjectPose::Response> response);
-  
-  // Service callback for object setPose relative to robot pose
-  void cb_object_setpose_from_robot_srv(const std::shared_ptr<stage_ros2::srv::SetObjectPose::Request> request,
-                                  std::shared_ptr<stage_ros2::srv::SetObjectPose::Response> response);                            
+                                   std::shared_ptr<stage_ros2::srv::SetObjectPose::Response> response);                       
 
   // The main simulator object
   Stg::World * world;

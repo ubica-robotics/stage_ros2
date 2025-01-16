@@ -1,9 +1,5 @@
 #include <stage_ros2/stage_node.hpp>
 
-#include <chrono>
-#include <memory>
-#include <filesystem>
-
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
