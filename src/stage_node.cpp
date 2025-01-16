@@ -269,7 +269,7 @@ void StageNode::cb_object_setpose_srv(
         return;
       }      
     }
-    RCLCPP_INFO(this->get_logger(), "Could not set pose: Invalid object!");
+    response->erros_msg = "Could not set pose: Invalid object!";
     response->result = response->FAILED;
   }
   else if (request->target_frame_id == "robot") {  
@@ -287,11 +287,11 @@ void StageNode::cb_object_setpose_srv(
         return;
       }
     }
-    RCLCPP_INFO(this->get_logger(), "Could not set pose: Invalid object!");
+    response->erros_msg = "Could not set pose: Invalid object!";
     response->result = response->FAILED;
   }
   else {
-    RCLCPP_INFO(this->get_logger(), "Could not set pose: Frame must be either 'map' or 'robot'!");
+    response->erros_msg = "Could not set pose: Frame must be either 'map' or 'robot'!";
     response->result = response->FAILED;
   }
 }
