@@ -25,8 +25,6 @@
 #include <tf2/transform_datatypes.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <stage_ros2/srv/set_object_pose.hpp>
-#include <visualization_msgs/msg/marker.hpp>
-#include <visualization_msgs/msg/marker_array.hpp>
 
 // libstage
 #include <stage.hh>

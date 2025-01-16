@@ -26,7 +26,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}_interface
-  "srv/SetObjectPose.srv"
+  "srv/SetObjectPose.srv" LIBRARY_NAME ${PROJECT_NAME}
 )
 
 include_directories(
