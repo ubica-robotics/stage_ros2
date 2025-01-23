@@ -13,6 +13,7 @@
 // roscpp
 #include <rclcpp/rclcpp.hpp>
 #include <std_srvs/srv/empty.hpp>
+#include <std_srvs/srv/trigger.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -208,6 +209,7 @@ public:
   // Service to listening on soft reset signals
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srv_reset_;
   rclcpp::Service<stage_ros2::srv::SetObjectPose>::SharedPtr srv_object_setpose_;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_get_dyn_objects_;
 
   // publisher for the simulated clock
   rclcpp::Publisher<rosgraph_msgs::msg::Clock>::SharedPtr clock_pub_;
@@ -256,7 +258,11 @@ public:
 
   // Service callback for object setPose
   void cb_object_setpose_srv(const std::shared_ptr<stage_ros2::srv::SetObjectPose::Request> request,
-                                   std::shared_ptr<stage_ros2::srv::SetObjectPose::Response> response);                       
+                                   std::shared_ptr<stage_ros2::srv::SetObjectPose::Response> response);
+
+  // Service callback for get dynamic objects list
+  void cb_get_dyn_objects(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+                                std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
   // The main simulator object
   Stg::World * world;
