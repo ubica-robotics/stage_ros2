@@ -25,6 +25,8 @@
 #include <tf2/transform_datatypes.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <stage_ros2/srv/set_object_pose.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+
 
 // libstage
 #include <stage.hh>
@@ -206,10 +208,12 @@ public:
   // Service to listening on soft reset signals
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srv_reset_;
   rclcpp::Service<stage_ros2::srv::SetObjectPose>::SharedPtr srv_object_setpose_;
-  rclcpp::Service<stage_ros2::srv::SetObjectPose>::SharedPtr srv_object_setpose_from_robot_;
 
   // publisher for the simulated clock
   rclcpp::Publisher<rosgraph_msgs::msg::Clock>::SharedPtr clock_pub_;
+
+  // publisher for object visualization
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_object_;
 
   /// called only ones to init the models and to crate for each model a link to ROS
   static int callback_init_stage_model(Stg::Model * mod, StageNode * node);

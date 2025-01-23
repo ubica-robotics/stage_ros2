@@ -5,9 +5,6 @@
 #include <filesystem>
 #include <cstring>
 
-#include <visualization_msgs/msg/marker.hpp>
-#include <visualization_msgs/msg/marker_array.hpp>
-
 StageNode::StageNode(rclcpp::NodeOptions options)
 : Node("stage_ros2", options), base_watchdog_timeout_(0, 0)
 {
@@ -195,33 +192,16 @@ int StageNode::callback_init_stage_model(Stg::Model * mod, StageNode * node)
 
 void StageNode::publish_object_visualization(StageNode * node)
 {
-  rclcpp::QoS qos(10);
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_object = node->create_publisher<visualization_msgs::msg::MarkerArray>("obstacle_viszualization", qos);
   visualization_msgs::msg::MarkerArray marker_array;
 
   for (const auto& object: node->objects_) {
-    visualization_msgs::msg::Marker marker_text;
-    marker_text.id = node->objects_.size() + object->id();
-    marker_text.header.frame_id = "map";
-    marker_text.header.stamp = object->node()->sim_time_;
-    marker_text.pose.position.x = object->model->GetGlobalPose().x;
-    marker_text.pose.position.y = object->model->GetGlobalPose().y;
-    marker_text.pose.position.z = object->model->GetGlobalPose().z;
-    marker_text.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
-    marker_text.text = object->name();
-    marker_text.ns = "ObjectNames";
-    marker_text.action = visualization_msgs::msg::Marker::MODIFY;
-    marker_text.scale.z = 0.2;
-    marker_text.color.r = 1.0;
-    marker_text.color.g = 1.0;
-    marker_text.color.b = 1.0;
-    marker_text.color.a = 1.0;
-
     visualization_msgs::msg::Marker marker_pose;
     marker_pose.id = object->id();
     marker_pose.header.frame_id = "map";
     marker_pose.header.stamp = object->node()->sim_time_;
-    marker_pose.pose.position = marker_text.pose.position;
+    marker_pose.pose.position.x = object->model->GetGlobalPose().x;
+    marker_pose.pose.position.y = object->model->GetGlobalPose().y;
+    marker_pose.pose.position.z = object->model->GetGeom().size.z / 2; // object origin for rviz is in its center
     marker_pose.pose.orientation = createQuaternionMsgFromYaw(object->model->GetGlobalPose().a);
     marker_pose.type = visualization_msgs::msg::Marker::CUBE;
     marker_pose.ns = "ObjectPoses";
@@ -234,10 +214,26 @@ void StageNode::publish_object_visualization(StageNode * node)
     marker_pose.color.b = 0.0;
     marker_pose.color.a = 1.0;
 
+    visualization_msgs::msg::Marker marker_text;
+    marker_text.id = node->objects_.size() + object->id();
+    marker_text.header.frame_id = "map";
+    marker_text.header.stamp = object->node()->sim_time_;
+    marker_text.pose.position = marker_pose.pose.position;
+    marker_text.pose.position.z = object->model->GetGeom().size.z;
+    marker_text.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+    marker_text.text = object->name();
+    marker_text.ns = "ObjectNames";
+    marker_text.action = visualization_msgs::msg::Marker::MODIFY;
+    marker_text.scale.z = 0.2;
+    marker_text.color.r = 1.0;
+    marker_text.color.g = 1.0;
+    marker_text.color.b = 1.0;
+    marker_text.color.a = 1.0;
+
     marker_array.markers.push_back(marker_text);
     marker_array.markers.push_back(marker_pose);
   }
-  pub_object->publish(marker_array);
+  node->pub_object_->publish(marker_array);
 }
 
 
@@ -388,6 +384,10 @@ int StageNode::SubscribeModels()
 
   // create the clock publisher
   clock_pub_ = this->create_publisher<rosgraph_msgs::msg::Clock>("/clock", 10);
+
+  // initialize publisher for visualization
+  rclcpp::QoS qos(10);
+  pub_object_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("obstacle_viszualization", qos);
 
   // advertising reset service
   srv_reset_ = this->create_service<std_srvs::srv::Empty>(
