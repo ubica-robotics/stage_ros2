@@ -209,10 +209,10 @@ void StageNode::publish_object_visualization(StageNode * node)
     marker_pose.scale.x = object->model->GetGeom().size.x;
     marker_pose.scale.y = object->model->GetGeom().size.y;
     marker_pose.scale.z = object->model->GetGeom().size.z;
-    marker_pose.color.r = 255.0;
-    marker_pose.color.g = 0.0;
-    marker_pose.color.b = 0.0;
-    marker_pose.color.a = 1.0;
+    marker_pose.color.r = object->model->GetColor().r;
+    marker_pose.color.g = object->model->GetColor().g;
+    marker_pose.color.b = object->model->GetColor().b;
+    marker_pose.color.a = object->model->GetColor().a;
 
     visualization_msgs::msg::Marker marker_text;
     marker_text.id = node->objects_.size() + object->id();
