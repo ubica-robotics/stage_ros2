@@ -343,22 +343,6 @@ void StageNode::cb_object_setpose_srv(
   }
 }
 
-void StageNode::cb_get_dyn_objects([[maybe_unused]] const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-                                   std::shared_ptr<std_srvs::srv::Trigger::Response> response)
-{
-  if(objects_.empty()){
-    response->success = false;
-    response->message = "You first need to define some obstacles!";
-  }else{
-    std::string msg = "Dynamic Objects are: ";
-    for(const auto& object: this->objects_){
-      msg.append(object->name() + " ");
-    }
-    response->success = true;
-    response->message = msg;
-  }
-}
-
 void StageNode::init(int argc, char ** argv)
 {
 
@@ -414,10 +398,6 @@ int StageNode::SubscribeModels()
 
   srv_object_setpose_ = this->create_service<stage_ros2::srv::SetObjectPose>(
     "stage/set_object_pose", std::bind(&StageNode::cb_object_setpose_srv, this,
-                                std::placeholders::_1, std::placeholders::_2));
-
-  srv_get_dyn_objects_= this->create_service<std_srvs::srv::Trigger>(
-    "stage/get_dyn_objects", std::bind(&StageNode::cb_get_dyn_objects, this,
                                 std::placeholders::_1, std::placeholders::_2));
 
   return 0;
