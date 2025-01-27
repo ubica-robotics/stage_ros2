@@ -1,0 +1,9 @@
+string name
+geometry_msgs/Point position
+float64 yaw # [rad]
+string target_frame_id
+---
+uint8 FAILED=2
+uint8 SUCCEEDED=1
+uint8 result
+string erros_msg
