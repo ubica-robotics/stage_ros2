@@ -343,6 +343,20 @@ void StageNode::cb_object_setpose_srv(
   }
 }
 
+void StageNode::cb_get_dyn_objects([[maybe_unused]] const std::shared_ptr<stage_ros2::srv::GetDynObjects::Request> request,
+                                                          std::shared_ptr<stage_ros2::srv::GetDynObjects::Response> response)
+{
+  if(objects_.empty()){
+    return;
+  }else{
+    std::vector<std::string> msg;
+    for(const auto& object: this->objects_){
+      msg.push_back(object->name());
+    }
+    response->list = msg;
+  }
+}
+
 void StageNode::init(int argc, char ** argv)
 {
 
@@ -398,6 +412,10 @@ int StageNode::SubscribeModels()
 
   srv_object_setpose_ = this->create_service<stage_ros2::srv::SetObjectPose>(
     "stage/set_object_pose", std::bind(&StageNode::cb_object_setpose_srv, this,
+                                std::placeholders::_1, std::placeholders::_2));
+
+  srv_get_dyn_objects_= this->create_service<stage_ros2::srv::GetDynObjects>(
+    "stage/get_dyn_objects", std::bind(&StageNode::cb_get_dyn_objects, this,
                                 std::placeholders::_1, std::placeholders::_2));
 
   return 0;
