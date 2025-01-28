@@ -25,6 +25,7 @@
 #include <tf2/transform_datatypes.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <stage_ros2/srv/set_object_pose.hpp>
+#include <stage_ros2/srv/get_dyn_objects.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 
@@ -208,6 +209,7 @@ public:
   // Service to listening on soft reset signals
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srv_reset_;
   rclcpp::Service<stage_ros2::srv::SetObjectPose>::SharedPtr srv_object_setpose_;
+  rclcpp::Service<stage_ros2::srv::GetDynObjects>::SharedPtr srv_get_dyn_objects_;
 
   // publisher for the simulated clock
   rclcpp::Publisher<rosgraph_msgs::msg::Clock>::SharedPtr clock_pub_;
@@ -256,7 +258,11 @@ public:
 
   // Service callback for object setPose
   void cb_object_setpose_srv(const std::shared_ptr<stage_ros2::srv::SetObjectPose::Request> request,
-                                   std::shared_ptr<stage_ros2::srv::SetObjectPose::Response> response);                       
+                                   std::shared_ptr<stage_ros2::srv::SetObjectPose::Response> response);
+
+  // Service callback for get dynamic objects list
+  void cb_get_dyn_objects(const std::shared_ptr<stage_ros2::srv::GetDynObjects::Request> request,
+                                std::shared_ptr<stage_ros2::srv::GetDynObjects::Response> response);
 
   // The main simulator object
   Stg::World * world;
