@@ -169,6 +169,8 @@ private:
     Stg::Pose initial_pose_;
     std::string name_;     /// used for the ros publisher
     StageNode * node_;
+    bool locked_on_robot_ = false;
+    Stg::Pose locked_pose_;
 
 public:
     Object(size_t id, const Stg::Pose & pose, const std::string & name, StageNode * node);
@@ -180,6 +182,11 @@ public:
     StageNode *node(){
       return node_;
     }
+    void set_locked_on_robot(bool locked) {locked_on_robot_ = locked;}
+    void set_locked_pose(Stg::Pose pose) {locked_pose_ = pose;}
+
+    void set_pose_rel(const std::shared_ptr<const Vehicle>& vehicle, const Stg::Pose rel_pose);
+    void update_pose();
 
     // stage related models
     Stg::Model * model;               // one position

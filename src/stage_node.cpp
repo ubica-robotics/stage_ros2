@@ -279,6 +279,10 @@ int StageNode::callback_update_stage_world(Stg::World * world, StageNode * node)
     }
   }
 
+  for(const auto& obj: node->objects_){
+    obj->update_pose();
+  }
+  
   publish_object_visualization(node);
 
   rosgraph_msgs::msg::Clock clock_msg;
@@ -312,6 +316,7 @@ void StageNode::cb_object_setpose_srv(
         RCLCPP_INFO(this->get_logger(), "Setting Position of %s relative to map!", request->name.c_str());
         Stg::Pose pose = Stg::Pose(target_pos.x, target_pos.y, target_pos.z, request->yaw);
         object->model->SetPose(pose);
+        object->set_locked_on_robot(false);
         response->result = response->SUCCEEDED;
         return;
       }      
@@ -321,16 +326,16 @@ void StageNode::cb_object_setpose_srv(
   }
   else if (request->target_frame_id == "robot") {  
     const auto& vehicle = this->vehicles_.front(); //assume there is just one robot
-    double x = vehicle->positionmodel->GetGlobalPose().x + std::cos(vehicle->positionmodel->GetGlobalPose().a) * target_pos.x - std::sin(vehicle->positionmodel->GetGlobalPose().a) * target_pos.y;
-    double y = vehicle->positionmodel->GetGlobalPose().y + std::sin(vehicle->positionmodel->GetGlobalPose().a) * target_pos.x + std::cos(vehicle->positionmodel->GetGlobalPose().a) * target_pos.y;
-    double yaw = vehicle->positionmodel->GetGlobalPose().a + request->yaw;
-
     for (const auto& object: this->objects_) {
       if (object->name() == request->name) {
         RCLCPP_INFO(this->get_logger(), "Setting Position of %s relative to robot!", request->name.c_str());
-        Stg::Pose pose = Stg::Pose(x, y, target_pos.z, yaw);
-        object->model->SetPose(pose);
+        Stg::Pose pose = Stg::Pose(target_pos.x, target_pos.y, target_pos.z, request->yaw);
+        object->set_pose_rel(vehicle, pose);
         response->result = response->SUCCEEDED;
+
+        object->set_locked_on_robot(request->locked_on_robot);
+        object->set_locked_pose(Stg::Pose(target_pos.x, target_pos.y, target_pos.z, request->yaw));
+
         return;
       }
     }
