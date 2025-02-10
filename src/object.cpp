@@ -13,7 +13,7 @@ size_t StageNode::Object::id() const
 }
 void StageNode::Object::soft_reset()
 {
-  model->SetPose(this->initial_pose_);
+  model->SetPose(initial_pose_);
   model->SetStall(false);
 }
 
@@ -29,4 +29,13 @@ void StageNode::Object::init()
 
   model->Subscribe();
   initialized_ = true;
+}
+
+void StageNode::Object::set_pose_rel(const std::shared_ptr<const Vehicle>& vehicle, const Stg::Pose rel_pose)
+{
+  Stg::Pose v_pose = vehicle->positionmodel->GetGlobalPose();
+  double glob_x = v_pose.x + std::cos(v_pose.a) * rel_pose.x - std::sin(v_pose.a) * rel_pose.y;
+  double glob_y = v_pose.y + std::sin(v_pose.a) * rel_pose.x + std::cos(v_pose.a) * rel_pose.y;
+  double glob_yaw = v_pose.a + rel_pose.a;
+  model->SetPose(Stg::Pose(glob_x, glob_y, rel_pose.z, glob_yaw));
 }
