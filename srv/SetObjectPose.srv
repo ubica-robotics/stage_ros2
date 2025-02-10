@@ -2,7 +2,7 @@ string name
 geometry_msgs/Point position
 float64 yaw # [rad]
 string target_frame_id
-bool locked_on_robot
+bool latched
 ---
 uint8 FAILED=2
 uint8 SUCCEEDED=1
