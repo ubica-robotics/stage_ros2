@@ -26,6 +26,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <stage_ros2/srv/set_object_pose.hpp>
 #include <stage_ros2/srv/get_dyn_objects.hpp>
+#include <stage_ros2/srv/set_object_detection_range.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 
@@ -171,6 +172,7 @@ private:
     StageNode * node_;
     bool latched_ = false;
     Stg::Pose latched_pose_;
+    double object_detection_range_ = -1.0;
 
 public:
     Object(size_t id, const Stg::Pose & pose, const std::string & name, StageNode * node);
@@ -184,10 +186,17 @@ public:
     }
     void set_latched(bool l) {latched_ = l;}
     bool latched() const {return latched_;}
-    void set_latched_pose(Stg::Pose pose) {latched_pose_ = pose;}
+    void set_latched_pose(const Stg::Pose pose) {latched_pose_ = pose;}
     Stg::Pose latched_pose() const {return latched_pose_;}
 
     void set_pose_rel(const std::shared_ptr<const Vehicle>& vehicle, const Stg::Pose rel_pose);
+
+    static constexpr int NO_DETECTION_LIMIT = -1;
+    static constexpr double STD_RANGER_RETURN = 1000.0;
+    static constexpr double NO_RANGER_RETURN = -1.0;
+    void set_object_detection_range(const double r) {object_detection_range_ = r;}
+    double object_detection_range() const {return object_detection_range_;}
+    double eucl_distance(const std::shared_ptr<const Vehicle>& vehicle) const;
 
     // stage related models
     Stg::Model * model;               // one position
@@ -218,6 +227,7 @@ public:
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srv_reset_;
   rclcpp::Service<stage_ros2::srv::SetObjectPose>::SharedPtr srv_object_setpose_;
   rclcpp::Service<stage_ros2::srv::GetDynObjects>::SharedPtr srv_get_dyn_objects_;
+  rclcpp::Service<stage_ros2::srv::SetObjectDetectionRange>::SharedPtr srv_set_object_detection_range_;
 
   // publisher for the simulated clock
   rclcpp::Publisher<rosgraph_msgs::msg::Clock>::SharedPtr clock_pub_;
@@ -271,6 +281,10 @@ public:
   // Service callback for get dynamic objects list
   void cb_get_dyn_objects(const std::shared_ptr<stage_ros2::srv::GetDynObjects::Request> request,
                                 std::shared_ptr<stage_ros2::srv::GetDynObjects::Response> response);
+
+  // Service callback for object set_object_detection_range
+  void cb_set_object_detection_range(const std::shared_ptr<stage_ros2::srv::SetObjectDetectionRange::Request> request,
+                                           std::shared_ptr<stage_ros2::srv::SetObjectDetectionRange::Response> response);
 
   // The main simulator object
   Stg::World * world;

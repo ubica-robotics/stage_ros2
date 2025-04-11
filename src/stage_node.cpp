@@ -279,10 +279,12 @@ int StageNode::callback_update_stage_world(Stg::World * world, StageNode * node)
     }
   }
 
+  // update obstacles
   for(const auto& obj: node->objects_){
     if(obj->latched()){
       obj->set_pose_rel(node->vehicles_.front(), obj->latched_pose());
     }
+    obj->object_detection_range() == StageNode::Object::NO_DETECTION_LIMIT or obj->eucl_distance(node->vehicles_.front()) <= obj->object_detection_range() ? obj->model->SetRangerReturn(StageNode::Object::STD_RANGER_RETURN) : obj->model->SetRangerReturn(StageNode::Object::NO_RANGER_RETURN);
   }
   publish_object_visualization(node);
 
@@ -363,6 +365,17 @@ void StageNode::cb_get_dyn_objects([[maybe_unused]] const std::shared_ptr<stage_
   }
 }
 
+void StageNode::cb_set_object_detection_range(const std::shared_ptr<stage_ros2::srv::SetObjectDetectionRange::Request> request,
+                                              [[maybe_unused]] std::shared_ptr<stage_ros2::srv::SetObjectDetectionRange::Response> response)
+{
+  for(const auto& obj: this->objects_){
+    if(std::find(request->names.begin(), request->names.end(), obj->name()) != request->names.end()){
+      obj->set_object_detection_range(request->detection_range);
+      RCLCPP_INFO(this->get_logger(), "Setting detection_range of %s to %f", obj->name().c_str(), request->detection_range);
+    }
+  }
+}
+
 void StageNode::init(int argc, char ** argv)
 {
 
@@ -422,6 +435,10 @@ int StageNode::SubscribeModels()
 
   srv_get_dyn_objects_= this->create_service<stage_ros2::srv::GetDynObjects>(
     "stage/get_dyn_objects", std::bind(&StageNode::cb_get_dyn_objects, this,
+                                std::placeholders::_1, std::placeholders::_2));
+
+  srv_set_object_detection_range_ = this->create_service<stage_ros2::srv::SetObjectDetectionRange>(
+    "stage/set_object_detection_range", std::bind(&StageNode::cb_set_object_detection_range, this,
                                 std::placeholders::_1, std::placeholders::_2));
 
   return 0;

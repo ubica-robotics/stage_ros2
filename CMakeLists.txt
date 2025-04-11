@@ -28,6 +28,7 @@ find_package(std_srvs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}_interface
   "srv/SetObjectPose.srv" 
   "srv/GetDynObjects.srv"
+  "srv/SetObjectDetectionRange.srv"
   LIBRARY_NAME ${PROJECT_NAME}
   DEPENDENCIES geometry_msgs
 )
