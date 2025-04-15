@@ -87,6 +87,25 @@ void StageNode::declare_parameters()
   this->declare_parameter<double>("object_detection_bound", -1, param_desc_object_detection_bound);
 }
 
+rcl_interfaces::msg::SetParametersResult StageNode::on_set_parameters(const std::vector<rclcpp::Parameter>& parameters)
+{
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = true;
+
+  for (const auto& param : parameters) {
+    if (param.get_name() == "object_detection_bound") {
+      if (param.as_double() < -1.0) {
+        RCLCPP_WARN(this->get_logger(), "Invalid value for 'object_detection_bound'. Must be >= -1.0. -1.0 will be interpreted as no bound.");
+        result.successful = false;
+      }else{
+        this->object_detection_bound_ = param.as_double();
+      }
+    }
+  }
+
+  return result;
+}
+
 void StageNode::update_parameters()
 {
   double base_watchdog_timeout_sec{5.0};
@@ -102,6 +121,7 @@ void StageNode::update_parameters()
   this->get_parameter("frame_id_base_link", this->frame_id_base_link_name_);
   this->get_parameter("frame_laser", this->frame_laser_);
   this->get_parameter("publish_tf", this->publish_tf_);
+  this->get_parameter("object_detection_bound", this->object_detection_bound_);
 
   this->get_parameter("world_file", this->world_file_);
   if (!std::filesystem::exists(this->world_file_)) {
@@ -133,7 +153,6 @@ void StageNode::callback_update_parameters()
 
   this->get_parameter("publish_ground_truth", this->publish_ground_truth_);
   // RCLCPP_INFO(this->get_logger(), "callback_update_parameter");
-  this->get_parameter("object_detection_bound", this->object_detection_bound_);
 }
 
 /**
@@ -246,7 +265,7 @@ void StageNode::update_obstacles(StageNode* node){
     if(obj->latched()){
       obj->set_pose_rel(node->vehicles_.front(), obj->latched_pose());
     }
-
+    
     if(node->object_detection_bound_ == StageNode::Object::NO_DETECTION_LIMIT or obj->eucl_distance(node->vehicles_.front()) <= node->object_detection_bound_){
       obj->model->SetRangerReturn(StageNode::Object::STD_RANGER_RETURN);
     }else{

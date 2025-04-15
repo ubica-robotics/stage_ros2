@@ -289,12 +289,19 @@ public:
   // Current simulation time
   rclcpp::Time sim_time_;
 
+  // cb handle for param set  
+  OnSetParametersCallbackHandle::SharedPtr callback_handle_ = this->add_on_set_parameters_callback(
+    std::bind(&StageNode::on_set_parameters, this, std::placeholders::_1));
+
 private:
   static geometry_msgs::msg::TransformStamped create_transform_stamped(
     const tf2::Transform & in,
     const rclcpp::Time & timestamp, const std::string & frame_id,
     const std::string & child_frame_id);
   static geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw);
+
+  // validate and set certain parameters on set
+  rcl_interfaces::msg::SetParametersResult on_set_parameters(const std::vector<rclcpp::Parameter>& parameters);
 
 };
 
