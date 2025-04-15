@@ -81,6 +81,10 @@ void StageNode::declare_parameters()
   auto param_desc_frame_laser = rcl_interfaces::msg::ParameterDescriptor{};
   param_desc_frame_laser.description = "laser frame name";
   this->declare_parameter<std::string>("frame_laser", "laser_frame", param_desc_frame_laser);
+
+  auto param_desc_object_detection_bound = rcl_interfaces::msg::ParameterDescriptor{};
+  param_desc_object_detection_bound.description = "distance bound if an object is detectable by laser";
+  this->declare_parameter<double>("object_detection_bound", -1, param_desc_object_detection_bound);
 }
 
 void StageNode::update_parameters()
@@ -129,6 +133,7 @@ void StageNode::callback_update_parameters()
 
   this->get_parameter("publish_ground_truth", this->publish_ground_truth_);
   // RCLCPP_INFO(this->get_logger(), "callback_update_parameter");
+  this->get_parameter("object_detection_bound", this->object_detection_bound_);
 }
 
 /**
@@ -236,6 +241,19 @@ void StageNode::publish_object_visualization(StageNode * node)
   node->pub_object_->publish(marker_array);
 }
 
+void StageNode::update_obstacles(StageNode* node){
+  for(const auto& obj: node->objects_){
+    if(obj->latched()){
+      obj->set_pose_rel(node->vehicles_.front(), obj->latched_pose());
+    }
+
+    if(node->object_detection_bound_ == StageNode::Object::NO_DETECTION_LIMIT or obj->eucl_distance(node->vehicles_.front()) <= node->object_detection_bound_){
+      obj->model->SetRangerReturn(StageNode::Object::STD_RANGER_RETURN);
+    }else{
+      obj->model->SetRangerReturn(StageNode::Object::NO_RANGER_RETURN);
+    }
+  }
+}
 
 int StageNode::callback_update_stage_world(Stg::World * world, StageNode * node)
 {
@@ -279,13 +297,7 @@ int StageNode::callback_update_stage_world(Stg::World * world, StageNode * node)
     }
   }
 
-  // update obstacles
-  for(const auto& obj: node->objects_){
-    if(obj->latched()){
-      obj->set_pose_rel(node->vehicles_.front(), obj->latched_pose());
-    }
-    obj->object_detection_range() == StageNode::Object::NO_DETECTION_LIMIT or obj->eucl_distance(node->vehicles_.front()) <= obj->object_detection_range() ? obj->model->SetRangerReturn(StageNode::Object::STD_RANGER_RETURN) : obj->model->SetRangerReturn(StageNode::Object::NO_RANGER_RETURN);
-  }
+  update_obstacles(node);
   publish_object_visualization(node);
 
   rosgraph_msgs::msg::Clock clock_msg;
@@ -365,17 +377,6 @@ void StageNode::cb_get_dyn_objects([[maybe_unused]] const std::shared_ptr<stage_
   }
 }
 
-void StageNode::cb_set_object_detection_range(const std::shared_ptr<stage_ros2::srv::SetObjectDetectionRange::Request> request,
-                                              [[maybe_unused]] std::shared_ptr<stage_ros2::srv::SetObjectDetectionRange::Response> response)
-{
-  for(const auto& obj: this->objects_){
-    if(std::find(request->names.begin(), request->names.end(), obj->name()) != request->names.end()){
-      obj->set_object_detection_range(request->detection_range);
-      RCLCPP_INFO(this->get_logger(), "Setting detection_range of %s to %f", obj->name().c_str(), request->detection_range);
-    }
-  }
-}
-
 void StageNode::init(int argc, char ** argv)
 {
 
@@ -435,10 +436,6 @@ int StageNode::SubscribeModels()
 
   srv_get_dyn_objects_= this->create_service<stage_ros2::srv::GetDynObjects>(
     "stage/get_dyn_objects", std::bind(&StageNode::cb_get_dyn_objects, this,
-                                std::placeholders::_1, std::placeholders::_2));
-
-  srv_set_object_detection_range_ = this->create_service<stage_ros2::srv::SetObjectDetectionRange>(
-    "stage/set_object_detection_range", std::bind(&StageNode::cb_set_object_detection_range, this,
                                 std::placeholders::_1, std::placeholders::_2));
 
   return 0;
