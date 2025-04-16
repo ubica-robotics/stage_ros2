@@ -23,7 +23,7 @@
 #include <stage_ros2/transform_broadcaster.h>
 #include <stage_ros2/static_transform_broadcaster.h>
 #include <tf2/transform_datatypes.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <stage_ros2/srv/set_object_pose.hpp>
 #include <stage_ros2/srv/get_dyn_objects.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
