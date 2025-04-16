@@ -3,8 +3,8 @@
 
 StageNode::Object::Object(
     size_t id, const Stg::Pose &pose, const std::string &name,
-    StageNode *node)
-    : initialized_(false), id_(id), initial_pose_(pose), name_(name), node_(node)
+    StageNode *node, double &init_ranger_return)
+    : initialized_(false), id_(id), initial_pose_(pose), name_(name), node_(node), initial_ranger_return_(init_ranger_return)
 {
 }
 

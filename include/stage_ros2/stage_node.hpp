@@ -171,9 +171,10 @@ private:
     StageNode * node_;
     bool latched_ = false;
     Stg::Pose latched_pose_;
+    double initial_ranger_return_;
 
 public:
-    Object(size_t id, const Stg::Pose & pose, const std::string & name, StageNode * node);
+    Object(size_t id, const Stg::Pose & pose, const std::string & name, StageNode * node, double &init_ranger_return);
 
     void soft_reset();
     size_t id() const;
@@ -192,6 +193,7 @@ public:
     static constexpr int NO_DETECTION_LIMIT = -1;
     static constexpr double STD_RANGER_RETURN = 1000.0;
     static constexpr double NO_RANGER_RETURN = -1.0;
+    double initial_ranger_return() const {return initial_ranger_return_;}
     double eucl_distance(const std::shared_ptr<const Vehicle>& vehicle) const;
 
     // stage related models

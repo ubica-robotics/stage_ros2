@@ -204,7 +204,7 @@ int StageNode::callback_init_stage_model(Stg::Model * mod, StageNode * node)
       RCLCPP_INFO(node->get_logger(), "New Object \"%s\"", model_name.c_str());
       auto object = std::make_shared<Object>(
         node->objects_.size(),
-        model->GetGlobalPose(), mod->TokenStr(), node);
+        model->GetGlobalPose(), mod->TokenStr(), node, model->vis.ranger_return);
       node->objects_.push_back(object);
       object->model = model;
     }
@@ -266,7 +266,7 @@ void StageNode::update_obstacles(StageNode* node){
     }
     
     if(node->object_detection_bound_ == StageNode::Object::NO_DETECTION_LIMIT or obj->eucl_distance(node->vehicles_.front()) <= node->object_detection_bound_){
-      obj->model->SetRangerReturn(StageNode::Object::STD_RANGER_RETURN);
+      obj->model->SetRangerReturn(obj->initial_ranger_return());
     }else{
       obj->model->SetRangerReturn(StageNode::Object::NO_RANGER_RETURN);
     }
