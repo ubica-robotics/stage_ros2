@@ -191,7 +191,6 @@ public:
     void set_pose_rel(const std::shared_ptr<const Vehicle>& vehicle, const Stg::Pose rel_pose);
 
     static constexpr int NO_DETECTION_LIMIT = -1;
-    static constexpr double STD_RANGER_RETURN = 1000.0;
     static constexpr double NO_RANGER_RETURN = -1.0;
     double initial_ranger_return() const {return initial_ranger_return_;}
     double eucl_distance(const std::shared_ptr<const Vehicle>& vehicle) const;

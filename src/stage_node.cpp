@@ -51,7 +51,7 @@ void StageNode::declare_parameters()
   this->declare_parameter<bool>("is_depth_canonical", true, param_desc_is_depth_canonical);
 
   auto param_desc_publish_ground_truth = rcl_interfaces::msg::ParameterDescriptor{};
-  param_desc_publish_ground_truth.description = "publishes on true a ground truth tf!";
+  param_desc_publish_ground_truth.description = "publishes on true a ground truth topic!";
   this->declare_parameter<bool>("publish_ground_truth", true, param_desc_publish_ground_truth);
 
   auto param_desc_world_file = rcl_interfaces::msg::ParameterDescriptor{};
