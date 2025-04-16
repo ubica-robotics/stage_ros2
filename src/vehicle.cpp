@@ -140,7 +140,7 @@ void StageNode::Vehicle::publish_msg()
     global_pose_ = std::make_shared<Stg::Pose>(gpose);
   }
 
-  if (node()->publish_ground_truth_)
+  if (node_->publish_ground_truth_)
   {
     nav_msgs::msg::Odometry ground_truth_msg;
     ground_truth_msg.pose.pose.position.x = gt.getOrigin().x();
