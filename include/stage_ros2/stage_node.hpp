@@ -254,12 +254,6 @@ public:
   // int ros parameters for the startup
   void update_parameters();
 
-  // callback to check changes on the parameters
-  void callback_update_parameters();
-
-  // timer to check regulary for parameter changes
-  rclcpp::TimerBase::SharedPtr timer_update_parameter_;
-
   // Subscribe to models of interest.  Currently, we find and subscribe
   // to the first 'laser' model and the first 'position' model.  Returns
   // 0 on success (both models subscribed), -1 otherwise.

@@ -101,6 +101,23 @@ rcl_interfaces::msg::SetParametersResult StageNode::on_set_parameters(const std:
         this->object_detection_bound_ = param.as_double();
       }
     }
+
+    if (param.get_name() == "base_watchdog_timeout") {
+      if (param.as_double() < 0) {
+        RCLCPP_WARN(this->get_logger(), "Invalid value for 'base_watchdog_timeout'. Must be positive.");
+        result.successful = false;
+      }else{
+        this->base_watchdog_timeout_ = rclcpp::Duration::from_seconds(param.as_double());
+      }
+    }
+
+    if (param.get_name() == "use_static_transformations") {
+      this->use_static_transformations_ = param.as_bool();
+    }
+
+    if (param.get_name() == "publish_ground_truth") {
+      this->publish_ground_truth_ = param.as_bool();
+    }
   }
 
   return result;
@@ -135,24 +152,6 @@ void StageNode::update_parameters()
     RCLCPP_WARN(
       this->get_logger(), "The parameter one_tf_tree is set but deprecated and will be removed in later versions");
   }
-
-  callback_update_parameters();
-
-  using namespace std::chrono_literals;
-  timer_update_parameter_ =
-    this->create_wall_timer(1000ms, std::bind(&StageNode::callback_update_parameters, this));
-}
-
-void StageNode::callback_update_parameters()
-{
-  double base_watchdog_timeout_sec;
-  this->get_parameter("base_watchdog_timeout", base_watchdog_timeout_sec);
-  this->base_watchdog_timeout_ = rclcpp::Duration::from_seconds(base_watchdog_timeout_sec);
-
-  this->get_parameter("use_static_transformations", use_static_transformations_);
-
-  this->get_parameter("publish_ground_truth", this->publish_ground_truth_);
-  // RCLCPP_INFO(this->get_logger(), "callback_update_parameter");
 }
 
 /**
