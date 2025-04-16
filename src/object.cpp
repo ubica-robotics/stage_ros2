@@ -1,9 +1,10 @@
 #include <stage_ros2/stage_node.hpp>
+#include <cmath>
 
 StageNode::Object::Object(
     size_t id, const Stg::Pose &pose, const std::string &name,
-    StageNode *node)
-    : initialized_(false), id_(id), initial_pose_(pose), name_(name), node_(node)
+    StageNode *node, double &init_ranger_return)
+    : initialized_(false), id_(id), initial_pose_(pose), name_(name), node_(node), initial_ranger_return_(init_ranger_return)
 {
 }
 
@@ -38,4 +39,12 @@ void StageNode::Object::set_pose_rel(const std::shared_ptr<const Vehicle>& vehic
   double glob_y = v_pose.y + std::sin(v_pose.a) * rel_pose.x + std::cos(v_pose.a) * rel_pose.y;
   double glob_yaw = v_pose.a + rel_pose.a;
   model->SetPose(Stg::Pose(glob_x, glob_y, rel_pose.z, glob_yaw));
+}
+
+double StageNode::Object::eucl_distance(const std::shared_ptr<const Vehicle>& vehicle) const
+{
+  Stg::Pose v_pose = vehicle->positionmodel->GetGlobalPose();
+  Stg::Pose o_pose = model->GetGlobalPose();
+  double eucl_d = std::hypot(v_pose.x-o_pose.x, v_pose.y-o_pose.y);
+  return eucl_d;
 }

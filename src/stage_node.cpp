@@ -51,7 +51,7 @@ void StageNode::declare_parameters()
   this->declare_parameter<bool>("is_depth_canonical", true, param_desc_is_depth_canonical);
 
   auto param_desc_publish_ground_truth = rcl_interfaces::msg::ParameterDescriptor{};
-  param_desc_publish_ground_truth.description = "publishes on true a ground truth tf!";
+  param_desc_publish_ground_truth.description = "publishes on true a ground truth topic!";
   this->declare_parameter<bool>("publish_ground_truth", true, param_desc_publish_ground_truth);
 
   auto param_desc_world_file = rcl_interfaces::msg::ParameterDescriptor{};
@@ -81,6 +81,46 @@ void StageNode::declare_parameters()
   auto param_desc_frame_laser = rcl_interfaces::msg::ParameterDescriptor{};
   param_desc_frame_laser.description = "laser frame name";
   this->declare_parameter<std::string>("frame_laser", "laser_frame", param_desc_frame_laser);
+
+  auto param_desc_object_detection_bound = rcl_interfaces::msg::ParameterDescriptor{};
+  param_desc_object_detection_bound.description = "distance bound if an object is detectable by laser";
+  this->declare_parameter<double>("object_detection_bound", -1, param_desc_object_detection_bound);
+}
+
+rcl_interfaces::msg::SetParametersResult StageNode::on_set_parameters(const std::vector<rclcpp::Parameter>& parameters)
+{
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = true;
+
+  for (const auto& param : parameters) {
+    if (param.get_name() == "object_detection_bound") {
+      if (param.as_double() < -1.0) {
+        RCLCPP_WARN(this->get_logger(), "Invalid value for 'object_detection_bound'. Must be >= -1.0. -1.0 will be interpreted as no bound.");
+        result.successful = false;
+      }else{
+        this->object_detection_bound_ = param.as_double();
+      }
+    }
+
+    if (param.get_name() == "base_watchdog_timeout") {
+      if (param.as_double() < 0) {
+        RCLCPP_WARN(this->get_logger(), "Invalid value for 'base_watchdog_timeout'. Must be positive.");
+        result.successful = false;
+      }else{
+        this->base_watchdog_timeout_ = rclcpp::Duration::from_seconds(param.as_double());
+      }
+    }
+
+    if (param.get_name() == "use_static_transformations") {
+      this->use_static_transformations_ = param.as_bool();
+    }
+
+    if (param.get_name() == "publish_ground_truth") {
+      this->publish_ground_truth_ = param.as_bool();
+    }
+  }
+
+  return result;
 }
 
 void StageNode::update_parameters()
@@ -98,6 +138,7 @@ void StageNode::update_parameters()
   this->get_parameter("frame_id_base_link", this->frame_id_base_link_name_);
   this->get_parameter("frame_laser", this->frame_laser_);
   this->get_parameter("publish_tf", this->publish_tf_);
+  this->get_parameter("object_detection_bound", this->object_detection_bound_);
 
   this->get_parameter("world_file", this->world_file_);
   if (!std::filesystem::exists(this->world_file_)) {
@@ -111,24 +152,6 @@ void StageNode::update_parameters()
     RCLCPP_WARN(
       this->get_logger(), "The parameter one_tf_tree is set but deprecated and will be removed in later versions");
   }
-
-  callback_update_parameters();
-
-  using namespace std::chrono_literals;
-  timer_update_parameter_ =
-    this->create_wall_timer(1000ms, std::bind(&StageNode::callback_update_parameters, this));
-}
-
-void StageNode::callback_update_parameters()
-{
-  double base_watchdog_timeout_sec;
-  this->get_parameter("base_watchdog_timeout", base_watchdog_timeout_sec);
-  this->base_watchdog_timeout_ = rclcpp::Duration::from_seconds(base_watchdog_timeout_sec);
-
-  this->get_parameter("use_static_transformations", use_static_transformations_);
-
-  this->get_parameter("publish_ground_truth", this->publish_ground_truth_);
-  // RCLCPP_INFO(this->get_logger(), "callback_update_parameter");
 }
 
 /**
@@ -181,7 +204,7 @@ int StageNode::callback_init_stage_model(Stg::Model * mod, StageNode * node)
       RCLCPP_INFO(node->get_logger(), "New Object \"%s\"", model_name.c_str());
       auto object = std::make_shared<Object>(
         node->objects_.size(),
-        model->GetGlobalPose(), mod->TokenStr(), node);
+        model->GetGlobalPose(), mod->TokenStr(), node, model->vis.ranger_return);
       node->objects_.push_back(object);
       object->model = model;
     }
@@ -236,6 +259,19 @@ void StageNode::publish_object_visualization(StageNode * node)
   node->pub_object_->publish(marker_array);
 }
 
+void StageNode::update_obstacles(StageNode* node){
+  for(const auto& obj: node->objects_){
+    if(obj->latched()){
+      obj->set_pose_rel(node->vehicles_.front(), obj->latched_pose());
+    }
+    
+    if(node->object_detection_bound_ == StageNode::Object::NO_DETECTION_LIMIT or obj->eucl_distance(node->vehicles_.front()) <= node->object_detection_bound_){
+      obj->model->SetRangerReturn(obj->initial_ranger_return());
+    }else{
+      obj->model->SetRangerReturn(StageNode::Object::NO_RANGER_RETURN);
+    }
+  }
+}
 
 int StageNode::callback_update_stage_world(Stg::World * world, StageNode * node)
 {
@@ -279,11 +315,7 @@ int StageNode::callback_update_stage_world(Stg::World * world, StageNode * node)
     }
   }
 
-  for(const auto& obj: node->objects_){
-    if(obj->latched()){
-      obj->set_pose_rel(node->vehicles_.front(), obj->latched_pose());
-    }
-  }
+  update_obstacles(node);
   publish_object_visualization(node);
 
   rosgraph_msgs::msg::Clock clock_msg;

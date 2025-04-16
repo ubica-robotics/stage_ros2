@@ -171,9 +171,10 @@ private:
     StageNode * node_;
     bool latched_ = false;
     Stg::Pose latched_pose_;
+    double initial_ranger_return_;
 
 public:
-    Object(size_t id, const Stg::Pose & pose, const std::string & name, StageNode * node);
+    Object(size_t id, const Stg::Pose & pose, const std::string & name, StageNode * node, double &init_ranger_return);
 
     void soft_reset();
     size_t id() const;
@@ -184,10 +185,15 @@ public:
     }
     void set_latched(bool l) {latched_ = l;}
     bool latched() const {return latched_;}
-    void set_latched_pose(Stg::Pose pose) {latched_pose_ = pose;}
+    void set_latched_pose(const Stg::Pose pose) {latched_pose_ = pose;}
     Stg::Pose latched_pose() const {return latched_pose_;}
 
     void set_pose_rel(const std::shared_ptr<const Vehicle>& vehicle, const Stg::Pose rel_pose);
+
+    static constexpr int NO_DETECTION_LIMIT = -1;
+    static constexpr double NO_RANGER_RETURN = -1.0;
+    double initial_ranger_return() const {return initial_ranger_return_;}
+    double eucl_distance(const std::shared_ptr<const Vehicle>& vehicle) const;
 
     // stage related models
     Stg::Model * model;               // one position
@@ -210,6 +216,7 @@ public:
   std::string frame_id_world_name_;        /// ROS parameter
   std::string frame_id_base_link_name_;    /// ROS parameter
   std::string frame_laser_;                /// ROS parameter
+  double object_detection_bound_;          /// ROS parameter
 
   // TF broadcaster to publish the robot odom
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_stage_;
@@ -234,6 +241,9 @@ public:
   // publishes visualization markers for objects
   static void publish_object_visualization(StageNode * node);
 
+  // updates obstacles pose (if latched) and ranger-visibility
+  static void update_obstacles(StageNode* node);
+
 public:
   ~StageNode();
   // Constructor
@@ -244,12 +254,6 @@ public:
 
   // int ros parameters for the startup
   void update_parameters();
-
-  // callback to check changes on the parameters
-  void callback_update_parameters();
-
-  // timer to check regulary for parameter changes
-  rclcpp::TimerBase::SharedPtr timer_update_parameter_;
 
   // Subscribe to models of interest.  Currently, we find and subscribe
   // to the first 'laser' model and the first 'position' model.  Returns
@@ -280,12 +284,19 @@ public:
   // Current simulation time
   rclcpp::Time sim_time_;
 
+  // cb handle for param set  
+  OnSetParametersCallbackHandle::SharedPtr callback_handle_ = this->add_on_set_parameters_callback(
+    std::bind(&StageNode::on_set_parameters, this, std::placeholders::_1));
+
 private:
   static geometry_msgs::msg::TransformStamped create_transform_stamped(
     const tf2::Transform & in,
     const rclcpp::Time & timestamp, const std::string & frame_id,
     const std::string & child_frame_id);
   static geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw);
+
+  // validate and set certain parameters on set
+  rcl_interfaces::msg::SetParametersResult on_set_parameters(const std::vector<rclcpp::Parameter>& parameters);
 
 };
 

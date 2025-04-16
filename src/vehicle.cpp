@@ -139,23 +139,28 @@ void StageNode::Vehicle::publish_msg()
     // There are no previous readings, adding current pose...
     global_pose_ = std::make_shared<Stg::Pose>(gpose);
   }
-  nav_msgs::msg::Odometry ground_truth_msg;
-  ground_truth_msg.pose.pose.position.x = gt.getOrigin().x();
-  ground_truth_msg.pose.pose.position.y = gt.getOrigin().y();
-  ground_truth_msg.pose.pose.position.z = gt.getOrigin().z();
-  ground_truth_msg.pose.pose.orientation.x = gt.getRotation().x();
-  ground_truth_msg.pose.pose.orientation.y = gt.getRotation().y();
-  ground_truth_msg.pose.pose.orientation.z = gt.getRotation().z();
-  ground_truth_msg.pose.pose.orientation.w = gt.getRotation().w();
-  ground_truth_msg.twist.twist.linear.x = gvel.x;
-  ground_truth_msg.twist.twist.linear.y = gvel.y;
-  ground_truth_msg.twist.twist.linear.z = gvel.z;
-  ground_truth_msg.twist.twist.angular.z = gvel.a;
 
-  ground_truth_msg.header.frame_id = frame_id_world_;
-  ground_truth_msg.header.stamp = node_->sim_time_;
+  if (node_->publish_ground_truth_)
+  {
+    nav_msgs::msg::Odometry ground_truth_msg;
+    ground_truth_msg.pose.pose.position.x = gt.getOrigin().x();
+    ground_truth_msg.pose.pose.position.y = gt.getOrigin().y();
+    ground_truth_msg.pose.pose.position.z = gt.getOrigin().z();
+    ground_truth_msg.pose.pose.orientation.x = gt.getRotation().x();
+    ground_truth_msg.pose.pose.orientation.y = gt.getRotation().y();
+    ground_truth_msg.pose.pose.orientation.z = gt.getRotation().z();
+    ground_truth_msg.pose.pose.orientation.w = gt.getRotation().w();
+    ground_truth_msg.twist.twist.linear.x = gvel.x;
+    ground_truth_msg.twist.twist.linear.y = gvel.y;
+    ground_truth_msg.twist.twist.linear.z = gvel.z;
+    ground_truth_msg.twist.twist.angular.z = gvel.a;
 
-  pub_ground_truth_->publish(ground_truth_msg);
+    ground_truth_msg.header.frame_id = frame_id_world_;
+    ground_truth_msg.header.stamp = node_->sim_time_;
+
+    pub_ground_truth_->publish(ground_truth_msg);
+  }
+
   time_last_pose_update_ = node_->sim_time_;
 }
 void StageNode::Vehicle::publish_tf()
