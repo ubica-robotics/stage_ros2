@@ -44,12 +44,12 @@ ament_target_dependencies(stage_node rclcpp rclcpp_components
 sensor_msgs geometry_msgs nav_msgs std_msgs tf2_ros std_srvs tf2_geometry_msgs visualization_msgs)
 
 
-# This package installs libraries without exporting them.
-# Export the library path to ensure that the installed libraries are available.
-if(NOT WIN32)
-  ament_environment_hooks(
-    "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}")
-endif()
+# # This package installs libraries without exporting them.
+# # Export the library path to ensure that the installed libraries are available.
+# if(NOT WIN32)
+#   ament_environment_hooks(
+#     "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}")
+# endif()
 
 add_executable(stage_ros2 src/main.cpp)
 target_include_directories(stage_ros2 PUBLIC
@@ -77,8 +77,9 @@ install(TARGETS
   stage_ros2
   DESTINATION lib/${PROJECT_NAME})
 
-rosidl_target_interfaces(stage_node 
-  ${PROJECT_NAME}_interface "rosidl_typesupport_cpp")
+rosidl_get_typesupport_target(cpp_typesupport_target
+  ${PROJECT_NAME}_interface rosidl_typesupport_cpp)
+target_link_libraries(stage_node "${cpp_typesupport_target}")
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
